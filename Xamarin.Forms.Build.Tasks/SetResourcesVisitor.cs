@@ -52,15 +52,9 @@ namespace Xamarin.Forms.Build.Tasks
 					return;
 			}
 
-			if (node.SkipPrefix((node.NamespaceResolver ?? parentNode.NamespaceResolver)?.LookupPrefix(propertyName.NamespaceURI)))
-				return;
 			if (propertyName.NamespaceURI == "http://schemas.openxmlformats.org/markup-compatibility/2006" &&
 				propertyName.LocalName == "Ignorable")
-			{
-				(parentNode.IgnorablePrefixes ?? (parentNode.IgnorablePrefixes = new List<string>())).AddRange(
-					(node.Value as string).Split(','));
 				return;
-			}
 			if (propertyName.LocalName != "MergedWith")
 				return;
 			SetPropertiesVisitor.SetPropertyValue(Context.Variables[(IElementNode)parentNode], propertyName, node, Context, node);
@@ -76,7 +70,6 @@ namespace Xamarin.Forms.Build.Tasks
 			if (IsCollectionItem(node, parentNode) && parentNode is IElementNode)
 			{
 				// Collection element, implicit content, or implicit collection element.
-				CustomAttribute cpAttr;
 				var parentVar = Context.Variables[(IElementNode)parentNode];
 				if (parentVar.VariableType.ImplementsInterface(Module.Import(typeof (IEnumerable))))
 				{

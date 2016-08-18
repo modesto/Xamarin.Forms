@@ -90,10 +90,11 @@ namespace Xamarin.Forms.Build.Tasks
 			MethodReference nullableCtor = null;
 			if (targetTypeRef.Resolve().FullName == "System.Nullable`1")
 			{
+				var nullableTypeRef = targetTypeRef;
 				targetTypeRef = ((GenericInstanceType)targetTypeRef).GenericArguments[0];
 				isNullable = true;
 				nullableCtor = originalTypeRef.GetMethods(md => md.IsConstructor && md.Parameters.Count == 1, module).Single().Item1;
-				nullableCtor = nullableCtor.MakeGeneric(targetTypeRef);
+				nullableCtor = nullableCtor.ResolveGenericParameters(nullableTypeRef, module);
 			}
 			//Obvious Built-in conversions
 			if (targetTypeRef.Resolve().BaseType != null && targetTypeRef.Resolve().BaseType.FullName == "System.Enum")
@@ -219,7 +220,10 @@ namespace Xamarin.Forms.Build.Tasks
 				return true;
 			}
 
-			var getters = bpRef.DeclaringType.GetMethods(md => md.Name == "Get" + pName && md.IsStatic, module).SingleOrDefault();
+			var getters = bpRef.DeclaringType.GetMethods(md => md.Name == "Get" + pName && 
+			                                             md.IsStatic && 
+			                                             md.Parameters.Count() == 1 &&
+			                                             md.Parameters[0].ParameterType.FullName == "Xamarin.Forms.BindableObject", module).SingleOrDefault();
 			if (getters != null)
 			{
 				if (getters.Item1.HasCustomAttributes)
@@ -262,7 +266,10 @@ namespace Xamarin.Forms.Build.Tasks
 
 			//Then check for getter or setter (attached BPs)
 			var getters =
-				bpRef.DeclaringType.GetMethods(md => md.Name == "Get" + name && md.IsStatic, context.Body.Method.Module)
+				bpRef.DeclaringType.GetMethods(md => md.Name == "Get" + name &&
+				                               md.IsStatic &&
+				                               md.Parameters.Count() == 1 &&
+				                               md.Parameters [0].ParameterType.FullName == "Xamarin.Forms.BindableObject", context.Body.Method.Module)
 					.SingleOrDefault();
 			if (getters != null)
 				return getters.Item1.ReturnType;

@@ -84,7 +84,7 @@ namespace Xamarin.Forms.Build.Tasks
 			}
 		}
 
-		protected void Log(int level, string format, params object[] arg)
+		protected void LogString(int level, string format, params object[] arg)
 		{
 			if (level <= 0)
 				Console.Error.Write(format, arg);
@@ -193,7 +193,7 @@ namespace Xamarin.Forms.Build.Tasks
 				var resourcesToPrune = new List<EmbeddedResource>();
 				foreach (var resource in module.Resources.OfType<EmbeddedResource>())
 				{
-					Log(2, "  Resource: {0}... ", resource.Name);
+					LogString(2, "  Resource: {0}... ", resource.Name);
 					string classname;
 					if (!resource.IsXaml(out classname))
 					{
@@ -232,7 +232,16 @@ namespace Xamarin.Forms.Build.Tasks
 					}
 					LogLine(2, "");
 
-					Log(2, "   Parsing Xaml... ");
+					var initCompRuntime = typeDef.Methods.FirstOrDefault(md => md.Name == "__InitComponentRuntime");
+					if (initCompRuntime != null)
+						LogLine(2, "   __InitComponentRuntime already exists... not duplicating");
+					else {
+						LogString(2, "   Duplicating {0}.InitializeComponent () into {0}.__InitComponentRuntime ... ", typeDef.Name);
+						initCompRuntime = DuplicateMethodDef(typeDef, initComp, "__InitComponentRuntime");
+						LogLine(2, "done.");
+					}
+
+					LogString(2, "   Parsing Xaml... ");
 					var rootnode = ParseXaml(resource.GetResourceStream(), typeDef);
 					if (rootnode == null)
 					{
@@ -245,14 +254,53 @@ namespace Xamarin.Forms.Build.Tasks
 
 					try
 					{
-						Log(2, "   Replacing {0}.InitializeComponent ()... ", typeDef.Name);
+						LogString(2, "   Replacing {0}.InitializeComponent ()... ", typeDef.Name);
 						var body = new MethodBody(initComp);
 						var il = body.GetILProcessor();
 						il.Emit(OpCodes.Nop);
+
+						// Generating branching code for the Previewer
+						//	IL_0007:  call class [mscorlib]System.Func`2<class [mscorlib]System.Type,string> class [Xamarin.Forms.Xaml.Internals]Xamarin.Forms.Xaml.XamlLoader::get_XamlFileProvider()
+						//  IL_000c:  brfalse IL_0031
+						//  IL_0011:  call class [mscorlib]System.Func`2<class [mscorlib]System.Type,string> class [Xamarin.Forms.Xaml.Internals]Xamarin.Forms.Xaml.XamlLoader::get_XamlFileProvider()
+						//  IL_0016:  ldarg.0 
+						//  IL_0017:  call instance class [mscorlib]System.Type object::GetType()
+						//  IL_001c:  callvirt instance !1 class [mscorlib]System.Func`2<class [mscorlib]System.Type, string>::Invoke(!0)
+						//  IL_0021:  brfalse IL_0031
+						//  IL_0026:  ldarg.0 
+						//  IL_0027:  call instance void class Xamarin.Forms.Xaml.UnitTests.XamlLoaderGetXamlForTypeTests::__InitComponentRuntime()
+						//  IL_002c:  ret
+						//  IL_0031:  nop
+
+						var nop = Instruction.Create(OpCodes.Nop);
+						var getXamlFileProvider = body.Method.Module.Import(body.Method.Module.Import(typeof(Xamarin.Forms.Xaml.Internals.XamlLoader))
+								.Resolve()
+								.Properties.FirstOrDefault(pd => pd.Name == "XamlFileProvider")
+						        .GetMethod);
+						il.Emit(OpCodes.Call, getXamlFileProvider);
+						il.Emit(OpCodes.Brfalse, nop);
+						il.Emit(OpCodes.Call, getXamlFileProvider);
+						il.Emit(OpCodes.Ldarg_0);
+						var getType = body.Method.Module.Import(body.Method.Module.Import(typeof(object))
+										  .Resolve()
+						                  .Methods.FirstOrDefault(md => md.Name == "GetType"));
+						il.Emit(OpCodes.Call, getType);
+						var func = body.Method.Module.Import(body.Method.Module.Import(typeof(Func<Type, string>))
+								 .Resolve()
+								 .Methods.FirstOrDefault(md => md.Name == "Invoke"));
+						func = func.ResolveGenericParameters(body.Method.Module.Import(typeof(Func<Type, string>)), body.Method.Module);
+						il.Emit(OpCodes.Callvirt, func);
+						il.Emit(OpCodes.Brfalse, nop);
+						il.Emit(OpCodes.Ldarg_0);
+						il.Emit(OpCodes.Call, initCompRuntime);
+						il.Emit(OpCodes.Ret);
+						il.Append(nop);
+
 						var visitorContext = new ILContext(il, body);
 
 						rootnode.Accept(new XamlNodeVisitor((node, parent) => node.Parent = parent), null);
 						rootnode.Accept(new ExpandMarkupsVisitor(visitorContext), null);
+						rootnode.Accept(new PruneIgnoredNodesVisitor(), null);
 						rootnode.Accept(new CreateObjectVisitor(visitorContext), null);
 						rootnode.Accept(new SetNamescopesAndRegisterNamesVisitor(visitorContext), null);
 						rootnode.Accept(new SetFieldVisitor(visitorContext), null);
@@ -291,7 +339,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 					if (OptimizeIL)
 					{
-						Log(2, "   Optimizing IL... ");
+						LogString(2, "   Optimizing IL... ");
 						initComp.Body.OptimizeMacros();
 						LogLine(2, "done");
 					}
@@ -299,7 +347,7 @@ namespace Xamarin.Forms.Build.Tasks
 					if (OutputGeneratedILAsCode)
 					{
 						var filepath = Path.Combine(Path.GetDirectoryName(Assembly), typeDef.FullName + ".decompiled.cs");
-						Log(2, "   Decompiling {0} into {1}...", typeDef.FullName, filepath);
+						LogString(2, "   Decompiling {0} into {1}...", typeDef.FullName, filepath);
 						var decompilerContext = new DecompilerContext(module);
 						using (var writer = new StreamWriter(filepath))
 						{
@@ -320,7 +368,7 @@ namespace Xamarin.Forms.Build.Tasks
 						LogLine(2, "  Removing compiled xaml resources");
 					foreach (var resource in resourcesToPrune)
 					{
-						Log(2, "   Removing {0}... ", resource.Name);
+						LogString(2, "   Removing {0}... ", resource.Name);
 						module.Resources.Remove(resource);
 						LogLine(2, "done");
 					}
@@ -335,7 +383,7 @@ namespace Xamarin.Forms.Build.Tasks
 				return success;
 			}
 
-			Log(1, "Writing the assembly... ");
+			LogString(1, "Writing the assembly... ");
 			try
 			{
 				assemblyDefinition.Write(Assembly, new WriterParameters
@@ -355,6 +403,14 @@ namespace Xamarin.Forms.Build.Tasks
 			return success;
 		}
 
+		protected static MethodDefinition DuplicateMethodDef(TypeDefinition typeDef, MethodDefinition methodDef, string newName)
+		{
+			var dup = new MethodDefinition(newName, methodDef.Attributes, methodDef.ReturnType);
+			dup.Body = methodDef.Body;
+			typeDef.Methods.Add(dup);
+			return dup;
+		}
+
 		static ILRootNode ParseXaml(Stream stream, TypeReference typeReference)
 		{
 			ILRootNode rootnode = null;
@@ -372,7 +428,7 @@ namespace Xamarin.Forms.Build.Tasks
 					}
 
 					XamlParser.ParseXaml(
-						rootnode = new ILRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), typeReference), reader);
+						rootnode = new ILRootNode(new XmlType(reader.NamespaceURI, reader.Name, null), typeReference, reader as IXmlNamespaceResolver), reader);
 					break;
 				}
 			}

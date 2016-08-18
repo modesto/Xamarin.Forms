@@ -6,6 +6,7 @@ using Xamarin.Forms.ControlGallery.iOS;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
+using System.Collections;
 
 #if __UNIFIED__
 using UIKit;
@@ -27,7 +28,7 @@ using MonoTouch.CoreLocation;
 [assembly: ExportRenderer(typeof(NativeListView2), typeof(NativeiOSListViewRenderer))]
 [assembly: ExportRenderer(typeof(NativeListView), typeof(NativeListViewRenderer))]
 [assembly: ExportRenderer(typeof(CustomMapView), typeof(CustomIOSMapRenderer))]
-
+[assembly: ExportRenderer(typeof(TabbedPage), typeof(TabbedPageWithCustomBarColorRenderer))]
 namespace Xamarin.Forms.ControlGallery.iOS
 {
 	public class CustomIOSMapRenderer : ViewRenderer<CustomMapView, MKMapView>
@@ -324,12 +325,12 @@ namespace Xamarin.Forms.ControlGallery.iOS
 		public IEnumerable<DataSource> Items
 		{
 			//get{ }
-			set { _tableItems = value.ToList(); }
+			set { _tableItems =  new List<DataSource>(value); }
 		}
 
 		public NativeiOSListViewSource(NativeListView2 view)
 		{
-			_tableItems = view.Items.ToList();
+			_tableItems = new List<DataSource>(view.Items);
 			_listView = view;
 		}
 
@@ -407,12 +408,13 @@ namespace Xamarin.Forms.ControlGallery.iOS
 
 		public IEnumerable<string> Items
 		{
-			set { _tableItems = value.ToList(); }
+			set { _tableItems = new List<string>(value); 
+			}
 		}
 
 		public NativeListViewSource(NativeListView view)
 		{
-			_tableItems = view.Items.ToList();
+			_tableItems = new List<string>(view.Items);
 			_listView = view;
 		}
 
@@ -524,7 +526,10 @@ namespace Xamarin.Forms.ControlGallery.iOS
 
 		public CollectionViewController(UICollectionViewLayout layout, OnItemSelected onItemSelected) : base(layout)
 		{
-			items = Enumerable.Range(0, 20).Select(c => $"#{c}").ToList();
+			items = new List<string>();
+			for (int i = 0; i < 20; i++) {
+				items.Add($"#{i}");
+			}
 			_onItemSelected = onItemSelected;
 		}
 
@@ -588,5 +593,16 @@ namespace Xamarin.Forms.ControlGallery.iOS
 		}
 	}
 
+	public class TabbedPageWithCustomBarColorRenderer : TabbedRenderer
+	{
+		public TabbedPageWithCustomBarColorRenderer()
+		{
+			TabBar.TintColor = UIColor.White;
+			TabBar.BarTintColor = UIColor.Purple;
+
+			//UITabBar.Appearance.TintColor = UIColor.White;
+			//UITabBar.Appearance.BarTintColor = UIColor.Purple;
+		}
+	}
 }
 

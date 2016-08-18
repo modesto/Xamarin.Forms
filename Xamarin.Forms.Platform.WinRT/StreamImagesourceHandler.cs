@@ -10,9 +10,9 @@ namespace Xamarin.Forms.Platform.UWP
 #else
 
 namespace Xamarin.Forms.Platform.WinRT
-#endif
+#endif 
 {
-	public sealed class StreamImagesourceHandler : IImageSourceHandler
+	public sealed class StreamImageSourceHandler : IImageSourceHandler
 	{
 		public async Task<Windows.UI.Xaml.Media.ImageSource> LoadImageAsync(ImageSource imagesource, CancellationToken cancellationToken = new CancellationToken())
 		{
@@ -21,7 +21,7 @@ namespace Xamarin.Forms.Platform.WinRT
 			var streamsource = imagesource as StreamImageSource;
 			if (streamsource != null && streamsource.Stream != null)
 			{
-				using (Stream stream = await streamsource.GetStreamAsync(cancellationToken))
+				using (Stream stream = await ((IStreamImageSource)streamsource).GetStreamAsync(cancellationToken))
 				{
 					if (stream == null)
 						return null;

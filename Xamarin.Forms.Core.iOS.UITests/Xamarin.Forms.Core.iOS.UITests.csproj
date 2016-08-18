@@ -58,14 +58,12 @@
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="Xamarin.UITest, Version=1.3.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.UITest.1.3.7\lib\Xamarin.UITest.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Xamarin.UITest">
+      <HintPath>..\packages\Xamarin.UITest.1.3.8\lib\Xamarin.UITest.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseTestFixture.cs" />
-    <Compile Include="App.cs" />
     <Compile Include="PlatformQueries.cs" />
     <Compile Include="Remotes\BaseViewContainerRemote.cs" />
     <Compile Include="Remotes\EventViewContainerRemote.cs" />
@@ -76,39 +74,13 @@
     <Compile Include="Remotes\StateViewContainerRemote.cs" />
     <Compile Include="Remotes\RemoteFactory.cs" />
     <Compile Include="Tests\ContextActionsUITests.cs" />
-    <Compile Include="Tests\Legacy-BoundViewUITest.cs" />
-    <Compile Include="Tests\Legacy-ClipToBoundsUITests.cs" />
-    <Compile Include="Tests\Legacy-GroupedListActionsUITests.cs" />
-    <Compile Include="Tests\Legacy-ButtonUITests.cs" />
-    <Compile Include="Tests\Legacy-EditorUITests.cs" />
-    <Compile Include="Tests\Legacy-EntryUITests.cs" />
-    <Compile Include="Tests\Legacy-AbsoluteLayoutGalleryTest.cs" />
     <Compile Include="Tests\ActivityIndicatorUITests.cs" />
-    <Compile Include="Tests\Legacy-CarouselPageUITests.cs" />
     <Compile Include="Tests\Legacy-CellsUITests.cs" />
     <Compile Include="Tests\DatePickerUITests.cs" />
     <Compile Include="Tests\BoxViewUITests.cs" />
     <Compile Include="Tests\EditorUITests.cs" />
     <Compile Include="Tests\FrameUITests.cs" />
-    <Compile Include="Tests\Legacy-GridGalleryUITests.cs" />
     <Compile Include="Tests\ImageUITests.cs" />
-    <Compile Include="Tests\Legacy-InputIntentUITests.cs" />
-    <Compile Include="Tests\Legacy-ListUITests.cs" />
-    <Compile Include="Tests\Legacy-MapUITests.cs" />
-    <Compile Include="Tests\Legacy-MinimumSizeUITest.cs" />
-    <Compile Include="Tests\Legacy-RelativeLayoutUITest.cs" />
-    <Compile Include="Tests\Legacy-SliderUITests.cs" />
-    <Compile Include="Tests\Legacy-StackLayoutUITest.cs" />
-    <Compile Include="Tests\Legacy-StepperUITests.cs" />
-    <Compile Include="Tests\Legacy-SwitchUITests.cs" />
-    <Compile Include="Tests\Legacy-SearchBarUITests.cs" />
-    <Compile Include="Tests\Legacy-TemplatedCarouselPageUITests.cs" />
-    <Compile Include="Tests\Legacy-TemplatedTabPageUITests.cs" />
-    <Compile Include="Tests\Legacy-TableViewUITests.cs" />
-    <Compile Include="Tests\Legacy-ToolbarGalleryUITests.cs" />
-    <Compile Include="Tests\Legacy-UnevenViewCellUITests.cs" />
-    <Compile Include="Tests\Legacy-ViewCellUITests.cs" />
-    <Compile Include="Tests\Legacy-NavigationBarUITests.cs" />
     <Compile Include="Tests\WebViewUITests.cs" />
     <Compile Include="Tests\TimePickerUITests.cs" />
     <Compile Include="Tests\SwitchUITests.cs" />

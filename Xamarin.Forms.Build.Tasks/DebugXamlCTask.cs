@@ -48,7 +48,7 @@ namespace Xamarin.Forms.Build.Tasks
 				LogLine(2, " Module: {0}", module.Name);
 				foreach (var resource in module.Resources.OfType<EmbeddedResource>())
 				{
-					Log(2, "  Resource: {0}... ", resource.Name);
+					LogString(2, "  Resource: {0}... ", resource.Name);
 					string classname;
 					if (!resource.IsXaml(out classname))
 					{
@@ -67,18 +67,11 @@ namespace Xamarin.Forms.Build.Tasks
 						LogLine(2, "no InitializeComponent found... skipped.");
 						continue;
 					}
-					if (typeDef.Methods.FirstOrDefault(md => md.Name == "InitCompRuntime") != null)
-					{
-						LogLine(2, "InitCompRuntime already exists... skipped");
-						continue;
+					var initCompRuntime = typeDef.Methods.FirstOrDefault(md => md.Name == "__InitComponentRuntime");
+					if (initCompRuntime == null) {
+						LogLine(2, "no __InitComponentRuntime found... duplicating.");
+						initCompRuntime = DuplicateMethodDef(typeDef, initComp, "__InitComponentRuntime");
 					}
-					LogLine(2, "");
-
-					Log(2, "   Duplicating {0}.InitializeComponent () into {0}.InitCompRuntime ... ", typeDef.Name);
-					var initCompRuntime = new MethodDefinition("InitCompRuntime", initComp.Attributes, initComp.ReturnType);
-					initCompRuntime.Body = initComp.Body;
-					typeDef.Methods.Add(initCompRuntime);
-					LogLine(2, "done.");
 
 					//					IL_0000:  ldarg.0 
 					//					IL_0001:  callvirt instance void class [Xamarin.Forms.Core]Xamarin.Forms.ContentPage::'.ctor'()
@@ -92,7 +85,7 @@ namespace Xamarin.Forms.Build.Tasks
 					//					IL_0013:  br IL_001e
 					//
 					//					IL_0018:  ldarg.0 
-					//					IL_0019:  callvirt instance void class Xamarin.Forms.Xaml.XamlcTests.MyPage::InitCompRuntime()
+					//					IL_0019:  callvirt instance void class Xamarin.Forms.Xaml.XamlcTests.MyPage::__InitComponentRuntime()
 					//					IL_001e:  ret 
 
 					var altCtor =
@@ -100,10 +93,10 @@ namespace Xamarin.Forms.Build.Tasks
 							md => md.IsConstructor && md.Parameters.Count == 1 && md.Parameters[0].ParameterType == module.TypeSystem.Boolean)
 							.FirstOrDefault();
 					if (altCtor != null)
-						Log(2, "   Replacing body of {0}.{0} (bool {1}) ... ", typeDef.Name, altCtor.Parameters[0].Name);
+						LogString(2, "   Replacing body of {0}.{0} (bool {1}) ... ", typeDef.Name, altCtor.Parameters[0].Name);
 					else
 					{
-						Log(2, "   Adding {0}.{0} (bool useCompiledXaml) ... ", typeDef.Name);
+						LogString(2, "   Adding {0}.{0} (bool useCompiledXaml) ... ", typeDef.Name);
 						altCtor = new MethodDefinition(".ctor",
 							MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName |
 							MethodAttributes.RTSpecialName, module.TypeSystem.Void);
@@ -139,7 +132,7 @@ namespace Xamarin.Forms.Build.Tasks
 
 				LogLine(2, "");
 			}
-			Log(1, "Writing the assembly... ");
+			LogString(1, "Writing the assembly... ");
 			assemblyDefinition.Write(Assembly, new WriterParameters
 			{
 				WriteSymbols = DebugSymbols
